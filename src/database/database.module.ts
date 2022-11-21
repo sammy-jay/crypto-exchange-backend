@@ -9,12 +9,10 @@ import { join } from 'path';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        url: configService.get('DATABASE_URL'),
-        type: 'postgres',
-        ssl: {
-          rejectUnauthorized: false,
-        },
+        type: 'sqlite',
+        database: 'cryptoDB.sqlite',
         entities: [join(__dirname, '/../**', '*.entity.{ts,js}')],
+        synchronize: true,
         autoLoadEntities: true,
       }),
     }),

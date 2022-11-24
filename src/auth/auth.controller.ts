@@ -6,9 +6,11 @@ import {
   HttpCode,
   Post,
   Req,
+  Res,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto, RegistrationDto } from './dto';
 import { JwtGuard } from './guard/jwt.guard';
@@ -47,36 +49,34 @@ export class AuthController {
   @UseGuards(LocalGuard)
   @ApiBody({ type: LoginDto })
   @Post('login')
-  async login(@Req() request: RequestUser) {
+  async login(@Req() request: RequestUser, @Res() response: Response) {
     const user = request.user;
     delete user.password;
     const accessTokenCookie = this.authService.getCookieWithJwtToken(user.id);
     const { refreshTokenCookie, refreshToken } =
       await this.authService.getCookieWithJwtRefreshToken(user.id);
     await this.usersService.setCurrentRefreshToken(refreshToken, user.id);
-    request.res.setHeader('Set-Cookie', [
-      accessTokenCookie,
-      refreshTokenCookie,
-    ]);
-
+    response.setHeader('Set-Cookie', [accessTokenCookie, refreshTokenCookie]);
     return user;
   }
+
   @UseGuards(JwtRefreshGuard)
   @Get('refresh')
-  refresh(@Req() request: RequestUser) {
+  refresh(@Req() request: RequestUser, @Res() response: Response) {
     const user = request.user;
     delete user.password;
     const accessTokenCookie = this.authService.getCookieWithJwtToken(user.id);
 
-    request.res.setHeader('Set-Cookie', accessTokenCookie);
+    response.setHeader('Set-Cookie', accessTokenCookie);
     return user;
   }
+
   @HttpCode(204)
   @UseGuards(JwtGuard)
   @Get('logout')
-  async logout(@Req() request: RequestUser) {
+  async logout(@Req() request: RequestUser, @Res() response: Response) {
     await this.usersService.removeRefreshToken(request.user.id);
     // await this.usersService.turnOffTwoFactorAuthentication(request.user.id);
-    request.res.setHeader('Set-Cookie', this.authService.getCookiesForLogout());
+    response.setHeader('Set-Cookie', this.authService.getCookiesForLogout());
   }
 }
